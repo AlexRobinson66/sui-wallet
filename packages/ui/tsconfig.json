@@ -1,11 +1,7 @@
 {
   "extends": "@repo/typescript-config/react-library.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./*"]
-    }
+    "outDir": "dist"
   },
   "include": ["src", "lib", "hooks/use-mobile.ts"],
   "exclude": ["node_modules", "dist"]

@@ -4,7 +4,8 @@
   "private": true,
   "exports": {
     "./*": "./src/*.tsx",
-    "./lib/*": "./lib/*.ts"
+    "./lib/*": "./lib/*.ts",
+    "./hooks/*": "./hooks/*.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
