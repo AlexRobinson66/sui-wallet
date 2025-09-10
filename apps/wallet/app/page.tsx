@@ -10,16 +10,12 @@ import { ReceiveTokenDialog } from '../components/organisms/receive-token-dialog
 import { SendTokenDialog } from '../components/organisms/send-token-dialog'
 import { NumberDisplay } from '../components/atoms/number-display'
 import { ExternalLink, TrendingUp, TrendingDown } from 'lucide-react'
-import { TokenBalance as TokenBalanceType } from '../utils/sui-api'
+import { TokenBalance as TokenBalanceType } from '../utils/sui'
 
 export default function Page() {
   const { user } = useAuth()
   const [balances, setBalances] = useState<TokenBalanceType[]>([])
   const [totalValue, setTotalValue] = useState(0)
-
-  if (!user) {
-    return null
-  }
 
   const breadcrumbItems = [
     { label: 'Balances' }

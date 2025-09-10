@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { fetchTokenBalances, TokenBalance as TokenBalanceType, calculateTotalValue } from '../../utils/sui-api'
-import { NumberDisplay } from '../atoms/number-display'
+import { TokenBalance as TokenBalanceType } from '@/utils/sui'
+import { fetchTokenBalances } from '@/utils/coin-gecko'
+import { NumberDisplay } from '@/components/atoms/number-display'
 
 interface TokenBalanceProps {
   address: string
@@ -31,6 +32,10 @@ export function TokenBalance({ address, onBalancesChange }: TokenBalanceProps) {
 
     fetchBalances()
   }, [address, onBalancesChange])
+
+  const calculateTotalValue = (balances: TokenBalanceType[]): number => {
+    return balances.reduce((total, token) => total + parseFloat(token.usdValue), 0)
+  }
 
   const getTokenIcon = (symbol: string) => {
     const colors: { [key: string]: string } = {

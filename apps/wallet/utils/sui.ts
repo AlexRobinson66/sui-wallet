@@ -1,6 +1,10 @@
 // Sui API service for fetching wallet data and token prices
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client'
 import { normalizeSuiAddress } from '@mysten/sui/utils'
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
+import { Transaction } from '@mysten/sui/transactions'
+import { getZkLoginSignature } from '@mysten/sui/zklogin'
+import { ZkLoginSession } from './zk-login'
 
 export interface TokenBalance {
   symbol: string
@@ -11,7 +15,7 @@ export interface TokenBalance {
   coinType: string
 }
 
-export interface Transaction {
+export interface TransactionRecord {
   id: string
   type: 'send' | 'receive'
   amount: string
@@ -24,27 +28,19 @@ export interface Transaction {
   gasFee?: string
 }
 
+export const SUI_CHAINS = {
+  DEVNET: 'devnet',
+  TESTNET: 'testnet',
+  MAINNET: 'mainnet'
+}
+
 // Sui client instance
-const suiClient = new SuiClient({ url: getFullnodeUrl('mainnet') })
-
-// Token metadata mapping
-const TOKEN_METADATA: { [key: string]: { symbol: string; name: string; decimals: number } } = {
-  '0x2::sui::SUI': { symbol: 'SUI', name: 'Sui', decimals: 9 },
-  '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-  '0xaf8cd5edc19c4512f4259f0bee101a40d41eb83173818fbd0dbea56b6f4a8bf5::coin::COIN': { symbol: 'WETH', name: 'Wrapped Ethereum', decimals: 8 },
-}
-
-// Price data - in production, this would fetch from CoinGecko, Sui price API, etc.
-const MOCK_PRICES: { [key: string]: number } = {
-  'SUI': 2.45,
-  'USDC': 1.00,
-  'USDT': 1.00,
-  'WETH': 2500.00,
-  'BTC': 45000.00
-}
+export const suiClient = process.env.NEXT_PUBLIC_SUI_CHAIN !== SUI_CHAINS.DEVNET 
+  ? new SuiClient({ url: getFullnodeUrl('mainnet') })
+  : new SuiClient({ url: 'https://fullnode.devnet.sui.io' })
 
 // Mock transaction data based on the real wallet
-const MOCK_TRANSACTIONS: Transaction[] = [
+const MOCK_TRANSACTIONS: TransactionRecord[] = [
   {
     id: '1',
     type: 'receive',
@@ -91,80 +87,7 @@ const MOCK_TRANSACTIONS: Transaction[] = [
   }
 ]
 
-export async function fetchTokenBalances(address: string): Promise<TokenBalance[]> {
-  try {
-    const normalizedAddress = normalizeSuiAddress(address)
-    
-    // Get all coin objects for the address
-    const coinObjects = await suiClient.getCoins({
-      owner: normalizedAddress,
-    })
-
-    // Group coins by coin type
-    const coinMap = new Map<string, { totalBalance: bigint; coinType: string }>()
-    
-    for (const coin of coinObjects.data) {
-      const coinType = coin.coinType
-      const balance = BigInt(coin.balance)
-      
-      if (coinMap.has(coinType)) {
-        const existing = coinMap.get(coinType)!
-        existing.totalBalance += balance
-      } else {
-        coinMap.set(coinType, { totalBalance: balance, coinType })
-      }
-    }
-
-    // Convert to TokenBalance format
-    const balances: TokenBalance[] = []
-    
-    for (const [coinType, { totalBalance }] of coinMap) {
-      const metadata = TOKEN_METADATA[coinType]
-      
-      if (metadata) {
-        // Known token with metadata
-        const decimals = metadata.decimals
-        const balance = Number(totalBalance) / Math.pow(10, decimals)
-        const price = MOCK_PRICES[metadata.symbol] || 0
-        const usdValue = (balance * price).toFixed(2)
-        
-        balances.push({
-          symbol: metadata.symbol,
-          name: metadata.name,
-          balance: balance.toFixed(6),
-          price,
-          usdValue,
-          coinType
-        })
-      } else {
-        // Unknown token - show with basic info
-        const balance = Number(totalBalance) / Math.pow(10, 9) // Default to 9 decimals
-        const symbol = coinType.split('::').pop() || 'UNKNOWN'
-        const name = `Unknown ${symbol}`
-        
-        balances.push({
-          symbol: symbol,
-          name: name,
-          balance: balance.toFixed(6),
-          price: 0,
-          usdValue: '0.00',
-          coinType
-        })
-      }
-    }
-
-    // Sort by USD value (highest first)
-    balances.sort((a, b) => parseFloat(b.usdValue) - parseFloat(a.usdValue))
-    
-    return balances
-  } catch (error) {
-    console.error('Failed to fetch token balances:', error)
-    // Return empty array on error
-    return []
-  }
-}
-
-export async function fetchTransactions(address: string): Promise<Transaction[]> {
+export async function fetchTransactions(address: string): Promise<TransactionRecord[]> {
   try {
     const normalizedAddress = normalizeSuiAddress(address)
     
@@ -196,7 +119,7 @@ export async function fetchTransactions(address: string): Promise<Transaction[]>
       })
     ])
 
-    const transactions: Transaction[] = []
+    const transactions: TransactionRecord[] = []
     
     // Process sent transactions
     for (const txn of sentTxns.data) {
@@ -253,14 +176,90 @@ export async function fetchTransactions(address: string): Promise<Transaction[]>
   }
 }
 
-export async function fetchTokenPrice(symbol: string): Promise<number> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300))
-  
-  // In production, this would call CoinGecko API or similar
-  return MOCK_PRICES[symbol.toUpperCase()] || 0
+// Transaction signing and creation functions
+export async function signTransactionWithZkLogin(
+  suiClient: SuiClient,
+  transaction: Transaction,
+  zkLoginSession: ZkLoginSession
+): Promise<string> {
+  try {
+    // Import the ephemeral key pair
+    const ephemeralKeyPair = Ed25519Keypair.fromSecretKey(
+      new Uint8Array(JSON.parse(zkLoginSession.ephemeralKeyPair))
+    )
+
+    // Set the sender address
+    transaction.setSender(zkLoginSession.zkProof.userSignature)
+
+    // Sign the transaction with the ephemeral key pair
+    const { bytes, signature: userSignature } = await transaction.sign({
+      client: suiClient,
+      signer: ephemeralKeyPair,
+    })
+
+    // Generate the zkLogin signature
+    const zkLoginSignature = getZkLoginSignature({
+      inputs: {
+        ...zkLoginSession.zkProof,
+        addressSeed: zkLoginSession.zkProof.addressSeed,
+      },
+      maxEpoch: zkLoginSession.maxEpoch,
+      userSignature,
+    })
+
+    // Execute the transaction
+    const result = await suiClient.executeTransactionBlock({
+      transactionBlock: bytes,
+      signature: zkLoginSignature,
+      options: {
+        showEffects: true,
+        showObjectChanges: true,
+      },
+    })
+
+    return result.digest
+  } catch (error) {
+    console.error('Failed to sign transaction with zkLogin:', error)
+    throw error
+  }
 }
 
-export function calculateTotalValue(balances: TokenBalance[]): number {
-  return balances.reduce((total, token) => total + parseFloat(token.usdValue), 0)
+export function createTransferTransaction(
+  recipient: string,
+  amount: string,
+  coinType: string = '0x2::sui::SUI'
+): Transaction {
+  const txb = new Transaction()
+  
+  // Split coins
+  const [coin] = txb.splitCoins(txb.gas, [txb.pure.u64(amount)])
+  
+  // Transfer to recipient
+  txb.transferObjects([coin], txb.pure.address(recipient))
+  
+  return txb
+}
+
+export function createSwapTransaction(
+  fromCoinType: string,
+  toCoinType: string,
+  amount: string
+): Transaction {
+  const txb = new Transaction()
+  
+  // This is a simplified swap transaction
+  // In a real implementation, you would integrate with a DEX protocol
+  // For now, we'll just create a placeholder transaction
+  
+  // Split coins
+  const [coin] = txb.splitCoins(txb.gas, [txb.pure.u64(amount)])
+  
+  // Placeholder for swap logic
+  // In reality, this would call a swap function from a DEX package
+  txb.moveCall({
+    target: '0x2::coin::join',
+    arguments: [txb.object(coin), txb.gas],
+  })
+  
+  return txb
 }

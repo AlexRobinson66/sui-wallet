@@ -38,10 +38,14 @@ export function AppBreadcrumb({ items }: BreadcrumbProps) {
             <BreadcrumbItem>
               {item.href ? (
                 <BreadcrumbLink asChild>
-                  <Link href={item.href}>{item.label}</Link>
+                  <Link href={item.href}>
+                    <span>{item.label}</span>
+                  </Link>
                 </BreadcrumbLink>
               ) : (
-                <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                <BreadcrumbPage>
+                  <span>{item.label}</span>
+                </BreadcrumbPage>
               )}
             </BreadcrumbItem>
           </React.Fragment>

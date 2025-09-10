@@ -13,11 +13,9 @@ import { Button } from '@repo/ui/button'
 import { Input } from '@repo/ui/input'
 import { Label } from '@repo/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select'
-import { NumberDisplay } from '../atoms/number-display'
-import { TokenBalance } from '../../utils/sui-api'
-import { useAuth } from '../../contexts/auth-context'
-import { SuiClient } from '@mysten/sui/client'
-import { signTransactionWithZkLogin, createTransferTransaction } from '../../utils/zklogin-utils'
+import { NumberDisplay } from '@/components/atoms/number-display'
+import { TokenBalance, suiClient, signTransactionWithZkLogin, createTransferTransaction } from '@/utils/sui'
+import { useAuth } from '@/contexts/auth-context'
 
 interface SendTokenDialogProps {
   balances: TokenBalance[]
@@ -31,8 +29,6 @@ export function SendTokenDialog({ balances, onSend }: SendTokenDialogProps) {
   const [amount, setAmount] = useState('')
   const [recipient, setRecipient] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-
-  const suiClient = new SuiClient({ url: 'https://fullnode.devnet.sui.io' })
 
   const handleSend = async () => {
     if (!selectedToken || !amount || !recipient) return

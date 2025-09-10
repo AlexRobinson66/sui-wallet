@@ -1,8 +1,16 @@
 'use client'
 
-import { useAuth } from '../../contexts/auth-context'
-import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { 
+  LayoutDashboard, 
+  TrendingUp, 
+  Activity,
+  Settings, 
+  LogOut,
+  User
+} from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
 import {
   Sidebar,
   SidebarContent,
@@ -17,17 +25,16 @@ import {
   SidebarProvider,
   SidebarInset,
 } from '@repo/ui/sidebar'
-import { TopBar } from '../organisms/top-bar'
-import { 
-  LayoutDashboard, 
-  TrendingUp, 
-  Activity,
-  Settings, 
-  LogOut,
-  User,
-  ExternalLink
-} from 'lucide-react'
-import { TokenBalance } from '../../utils/sui-api'
+import { TopBar } from '@/components/organisms/top-bar'
+import { LoadingSpinner } from '@/components/atoms/loading-spinner'
+import { TokenBalance } from '@/utils/sui'
+
+interface MenuItem {
+  href?: string
+  onClick?: () => void
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+}
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode
@@ -37,23 +44,62 @@ interface AuthenticatedLayoutProps {
 }
 
 export function AuthenticatedLayout({ children, breadcrumbItems, balances, onSend }: AuthenticatedLayoutProps) {
-  const { user, logout } = useAuth()
+  const { user, logout, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!user) {
+    if (!isLoading && !user) {
       router.push('/login')
     }
-  }, [user, router])
+  }, [user, isLoading, router])
 
+  // Show loading while checking authentication
+  if (isLoading) {
+    return <LoadingSpinner message="Loading..." />
+  }
+
+  // If not authenticated, don't render anything (redirect will happen)
   if (!user) {
-    return null
+    return <LoadingSpinner message="Redirecting to login..." />
   }
 
   const handleLogout = () => {
     logout()
     router.push('/login')
   }
+
+  // Main navigation menu items
+  const menu: MenuItem[] = [
+    {
+      href: '/',
+      icon: LayoutDashboard,
+      label: 'Balances'
+    },
+    {
+      href: '/swap',
+      icon: TrendingUp,
+      label: 'Swap'
+    },
+    {
+      href: '/activity',
+      icon: Activity,
+      label: 'Activity'
+    }
+  ]
+
+  // Footer menu items
+  const footerMenu: MenuItem[] = [
+    {
+      href: '/settings',
+      icon: Settings,
+      label: 'Settings'
+    },
+    {
+      onClick: handleLogout,
+      icon: LogOut,
+      label: 'Logout'
+    }
+  ]
 
   return (
     <SidebarProvider>
@@ -77,30 +123,16 @@ export function AuthenticatedLayout({ children, breadcrumbItems, balances, onSen
             <SidebarGroupLabel>Navigation</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <a href="/">
-                      <LayoutDashboard className="h-4 w-4" />
-                      <span>Balances</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <a href="/swap">
-                      <TrendingUp className="h-4 w-4" />
-                      <span>Swap</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <a href="/activity">
-                      <Activity className="h-4 w-4" />
-                      <span>Activity</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {menu.map((item, index) => (
+                  <SidebarMenuItem key={index}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -110,20 +142,23 @@ export function AuthenticatedLayout({ children, breadcrumbItems, balances, onSen
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <a href="/settings">
-                      <Settings className="h-4 w-4" />
-                      <span>Settings</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={handleLogout}>
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {footerMenu.map((item, index) => (
+                  <SidebarMenuItem key={index}>
+                    {item.href ? (
+                      <SidebarMenuButton asChild>
+                        <a href={item.href}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    ) : (
+                      <SidebarMenuButton onClick={item.onClick}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    )}
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

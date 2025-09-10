@@ -1,8 +1,9 @@
 'use client'
 
-import { useAuth } from '../../contexts/auth-context'
-import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
+import { LoadingSpinner } from '@/components/atoms/loading-spinner'
 
 interface LoginLayoutProps {
   children: React.ReactNode
@@ -20,23 +21,16 @@ export function LoginLayout({ children }: LoginLayoutProps) {
 
   // Show loading while checking authentication
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner message="Loading..." />
   }
 
-  // If authenticated, don't render login pages
+  // If authenticated, show loading while redirecting
   if (isAuthenticated) {
-    return null
+    return <LoadingSpinner message="Redirecting to dashboard..." />
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       {children}
     </div>
   )

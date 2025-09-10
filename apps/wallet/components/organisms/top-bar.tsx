@@ -1,9 +1,9 @@
 'use client'
 
 import { SidebarTrigger } from '@repo/ui/sidebar'
-import { ThemeToggle } from '../atoms/theme-toggle'
-import { AppBreadcrumb } from '../atoms/breadcrumb'
-import { TokenBalance } from '../../utils/sui-api'
+import { ThemeToggle } from '@/components/atoms/theme-toggle'
+import { AppBreadcrumb } from '@/components/atoms/breadcrumb'
+import { TokenBalance } from '@/utils/sui'
 
 interface TopBarProps {
   breadcrumbItems: Array<{ label: string; href?: string }>

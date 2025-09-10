@@ -7,9 +7,6 @@ import { AuthenticatedLayout } from '@/components/templates/authenticated-layout
 export default function SettingsPage() {
   const { user } = useAuth()
 
-  if (!user) {
-    return null
-  }
 
   const breadcrumbItems = [
     { label: 'Settings' }
@@ -38,16 +35,16 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Wallet Address</label>
                 <div className="p-3 bg-muted rounded-md">
-                  <code className="text-sm break-all">{user.address}</code>
+                  <code className="text-sm break-all">{user?.address}</code>
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">OAuth Provider</label>
                 <div className="p-3 bg-muted rounded-md">
-                  <span className="capitalize">{user.provider}</span>
+                  <span className="capitalize">{user?.provider}</span>
                 </div>
               </div>
-              {user.email && (
+              {user?.email && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">Email</label>
                   <div className="p-3 bg-muted rounded-md">

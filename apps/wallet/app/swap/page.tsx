@@ -1,25 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '../../contexts/auth-context'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card'
+import { ArrowUpDown, Settings } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
+import { Card } from '@repo/ui/card'
 import { Button } from '@repo/ui/button'
 import { Input } from '@repo/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs'
-import { AuthenticatedLayout } from '../../components/templates/authenticated-layout'
-import { NumberDisplay } from '../../components/atoms/number-display'
-import { ArrowUpDown, Settings } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger } from '@repo/ui/tabs'
+import { AuthenticatedLayout } from '@/components/templates/authenticated-layout'
+import { NumberDisplay } from '@/components/atoms/number-display'
 
 export default function SpotTradingPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('buy')
   const [fromAmount, setFromAmount] = useState('')
   const [toAmount, setToAmount] = useState('')
-  const [slippage, setSlippage] = useState('0.5')
-
-  if (!user) {
-    return null
-  }
 
   const breadcrumbItems = [
     { label: 'Swap' }

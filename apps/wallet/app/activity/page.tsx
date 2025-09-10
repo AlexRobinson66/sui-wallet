@@ -1,17 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '../../contexts/auth-context'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card'
-import { AuthenticatedLayout } from '../../components/templates/authenticated-layout'
-import { Badge } from '@repo/ui/badge'
-import { NumberDisplay } from '../../components/atoms/number-display'
 import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle } from 'lucide-react'
-import { fetchTransactions, Transaction } from '../../utils/sui-api'
+import { useAuth } from '@/contexts/auth-context'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card'
+import { AuthenticatedLayout } from '@/components/templates/authenticated-layout'
+import { Badge } from '@repo/ui/badge'
+import { NumberDisplay } from '@/components/atoms/number-display'
+import { fetchTransactions, TransactionRecord } from '@/utils/sui'
 
 export default function ActivityPage() {
   const { user } = useAuth()
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [transactions, setTransactions] = useState<TransactionRecord[]>([])
   const [loading, setLoading] = useState(true)
 
   const breadcrumbItems = [
@@ -38,10 +38,6 @@ export default function ActivityPage() {
 
     loadTransactions()
   }, [user])
-
-  if (!user) {
-    return null
-  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {

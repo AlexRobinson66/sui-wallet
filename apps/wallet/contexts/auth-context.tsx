@@ -1,7 +1,15 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode
+} from 'react'
 import { useZkLoginSession } from '@/hooks/use-zklogin-session'
+import { useSessionStorage } from '@/hooks/use-session-storage'
+import { ZkLoginSession } from '@/utils/zk-login'
 
 interface User {
   address: string
@@ -11,18 +19,10 @@ interface User {
   name?: string
 }
 
-interface ZkLoginSession {
-  ephemeralKeyPair: string
-  zkProof: any
-  maxEpoch: number
-  userSalt: string
-}
-
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  hasSalt: boolean
   login: (user: User) => void
   logout: () => void
   getZkLoginSession: () => ZkLoginSession | null
@@ -32,32 +32,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser, clearUser] = useSessionStorage<User | null>('sui-wallet-user', null)
   const [isLoading, setIsLoading] = useState(true)
   const zkLoginSession = useZkLoginSession()
 
   useEffect(() => {
-    // Check for existing session on mount
-    const savedUser = localStorage.getItem('sui-wallet-user')
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (error) {
-        console.error('Failed to parse saved user:', error)
-        localStorage.removeItem('sui-wallet-user')
-      }
-    }
+    // Set loading to false after initial load
     setIsLoading(false)
   }, [])
 
   const login = (userData: User) => {
     setUser(userData)
-    localStorage.setItem('sui-wallet-user', JSON.stringify(userData))
   }
 
   const logout = () => {
-    setUser(null)
-    localStorage.removeItem('sui-wallet-user')
+    clearUser()
     // Clear zkLogin session data
     zkLoginSession.clearSession()
   }
@@ -70,13 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     zkLoginSession.clearSession()
   }
 
-  const hasSalt = zkLoginSession.hasSalt()
-
   const value = {
     user,
     isAuthenticated: !!user,
     isLoading,
-    hasSalt,
     login,
     logout,
     getZkLoginSession,

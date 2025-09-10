@@ -59,9 +59,12 @@ export function PinInput({
       setActiveIndex(index + 1)
     }
 
-    // Check if all digits are filled
+    // Check if all digits are filled and auto-proceed
     if (newPin.every(digit => digit !== '') && newPin.join('').length === length) {
-      onComplete(newPin.join(''))
+      // Small delay to show the last digit before proceeding
+      setTimeout(() => {
+        onComplete(newPin.join(''))
+      }, 100)
     }
   }
 
@@ -108,11 +111,6 @@ export function PinInput({
     onComplete(pastedData)
   }
 
-  const clearPin = () => {
-    setPin(new Array(length).fill(''))
-    setActiveIndex(0)
-  }
-
   return (
     <div className={`flex gap-2 justify-center ${className}`}>
       {pin.map((digit, index) => (
@@ -123,7 +121,7 @@ export function PinInput({
               inputRefs.current[index] = el
             }
           }}
-          type="text"
+          type="password"
           inputMode="numeric"
           pattern="[0-9]"
           maxLength={1}
@@ -136,6 +134,7 @@ export function PinInput({
           className={`w-12 h-12 text-center text-lg font-semibold ${
             activeIndex === index ? 'ring-2 ring-blue-500' : ''
           }`}
+          autoComplete="off"
         />
       ))}
     </div>

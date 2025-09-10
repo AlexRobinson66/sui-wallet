@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Copy, Download } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,6 @@ import {
   DialogTrigger,
 } from '@repo/ui/dialog'
 import { Button } from '@repo/ui/button'
-import { Copy, Download } from 'lucide-react'
 import QRCode from 'react-qr-code'
 
 interface ReceiveTokenDialogProps {
@@ -123,10 +123,10 @@ export function ReceiveTokenDialog({ address }: ReceiveTokenDialogProps) {
           <div className="text-sm text-muted-foreground space-y-2">
             <p className="font-medium">How to receive tokens:</p>
             <ul className="space-y-1 text-xs">
-              <li>• Share your wallet address with the sender</li>
-              <li>• Or have them scan the QR code above</li>
-              <li>• Make sure they're sending Sui network tokens</li>
-              <li>• Transactions usually complete within seconds</li>
+              <li>Share your wallet address with the sender</li>
+              <li>Or have them scan the QR code above</li>
+              <li>Make sure they're sending Sui network tokens</li>
+              <li>Transactions usually complete within seconds</li>
             </ul>
           </div>
         </div>
