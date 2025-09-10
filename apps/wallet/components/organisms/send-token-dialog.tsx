@@ -13,8 +13,11 @@ import { Button } from '@repo/ui/button'
 import { Input } from '@repo/ui/input'
 import { Label } from '@repo/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select'
-import { NumberDisplay } from './number-display'
-import { TokenBalance } from '../lib/sui-api'
+import { NumberDisplay } from '../atoms/number-display'
+import { TokenBalance } from '../../utils/sui-api'
+import { useAuth } from '../../contexts/auth-context'
+import { SuiClient } from '@mysten/sui/client'
+import { signTransactionWithZkLogin, createTransferTransaction } from '../../utils/zklogin-utils'
 
 interface SendTokenDialogProps {
   balances: TokenBalance[]
@@ -22,24 +25,46 @@ interface SendTokenDialogProps {
 }
 
 export function SendTokenDialog({ balances, onSend }: SendTokenDialogProps) {
+  const { getZkLoginSession } = useAuth()
   const [open, setOpen] = useState(false)
   const [selectedToken, setSelectedToken] = useState('')
   const [amount, setAmount] = useState('')
   const [recipient, setRecipient] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  const suiClient = new SuiClient({ url: 'https://fullnode.devnet.sui.io' })
+
   const handleSend = async () => {
     if (!selectedToken || !amount || !recipient) return
     
     setIsLoading(true)
     try {
+      // Get zkLogin session
+      const zkLoginSession = getZkLoginSession()
+      if (!zkLoginSession) {
+        throw new Error('No active zkLogin session found')
+      }
+
+      // Create transfer transaction
+      const transaction = createTransferTransaction(recipient, amount, selectedToken)
+      
+      // Sign and execute transaction
+      const txDigest = await signTransactionWithZkLogin(suiClient, transaction, zkLoginSession)
+      
+      console.log('Transaction sent:', txDigest)
+      
+      // Call the onSend callback for UI updates
       await onSend(selectedToken, amount, recipient)
+      
       setOpen(false)
       setSelectedToken('')
       setAmount('')
       setRecipient('')
+      
+      alert(`Transaction sent successfully! Hash: ${txDigest}`)
     } catch (error) {
       console.error('Send failed:', error)
+      alert(`Send failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }

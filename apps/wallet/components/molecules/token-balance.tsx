@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { fetchTokenBalances, TokenBalance as TokenBalanceType, calculateTotalValue } from '../lib/sui-api'
-import { NumberDisplay } from './number-display'
+import { fetchTokenBalances, TokenBalance as TokenBalanceType, calculateTotalValue } from '../../utils/sui-api'
+import { NumberDisplay } from '../atoms/number-display'
 
 interface TokenBalanceProps {
   address: string

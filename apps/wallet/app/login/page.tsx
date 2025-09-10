@@ -4,12 +4,11 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card'
 import { useRouter } from 'next/navigation'
-import { 
-  GoogleLoginButton, 
-  // FacebookLoginButton, 
-  // AppleLoginButton,
-  // TwitterLoginButton 
-} from 'react-social-login-buttons'
+import { GoogleLoginButton } from 'react-social-login-buttons'
+import { SuiClient } from '@mysten/sui/client'
+import { processOAuthCallback, initiateOAuthFlow } from '../../utils/zklogin-utils'
+import { useZkLoginSession } from '../../hooks/use-zklogin-session'
+import { LoginLayout } from '../../components/templates/login-layout'
 import styles from './page.module.css'
 
 const OAUTH_PROVIDERS = [
@@ -17,76 +16,108 @@ const OAUTH_PROVIDERS = [
     id: 'google', 
     component: GoogleLoginButton,
     text: 'Continue with Google'
-  },
-  // { 
-  //   id: 'facebook', 
-  //   component: FacebookLoginButton,
-  //   text: 'Continue with Facebook'
-  // },
-  // { 
-  //   id: 'apple', 
-  //   component: AppleLoginButton,
-  //   text: 'Continue with Apple'
-  // },
-  // { 
-  //   id: 'twitter', 
-  //   component: TwitterLoginButton,
-  //   text: 'Continue with Twitter'
-  // }
+  }
 ]
 
-export default function ZkLoginPage() {
-  const { login, isAuthenticated, isLoading } = useAuth()
+export default function LoginPage() {
+  const { login } = useAuth()
   const [isConnecting, setIsConnecting] = useState<string | null>(null)
+  const [oauthData, setOauthData] = useState<any>(null)
   const router = useRouter()
+  const zkLoginSession = useZkLoginSession()
 
-  // Redirect if already authenticated
+  // Sui client for devnet
+  const suiClient = new SuiClient({ url: 'https://fullnode.devnet.sui.io' })
+
+  // Check for OAuth callback
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push('/')
+    const urlParams = new URLSearchParams(window.location.search)
+    const idToken = urlParams.get('id_token')
+    
+    if (idToken) {
+      handleOAuthCallback(idToken)
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [])
 
-  // Show loading while checking authentication
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
+  const handleOAuthCallback = async (idToken: string) => {
+    try {
+      setIsConnecting('google')
+      
+      // Decode JWT to get user info
+      const { jwtDecode } = await import('jwt-decode')
+      const decodedJwt = jwtDecode(idToken) as any
+      
+      // Store OAuth data temporarily
+      const oauthUserData = {
+        sub: decodedJwt.sub,
+        email: decodedJwt.email || '',
+        name: decodedJwt.name || '',
+        provider: 'google'
+      }
+      
+      setOauthData(oauthUserData)
+      
+      // Check if user has salt set up for this account
+      const existingSalt = zkLoginSession.userSalt
+      
+      if (!existingSalt) {
+        // No salt found, redirect to PIN setup
+        router.push('/setup-salt')
+        return
+      }
+      
+      // Salt exists, proceed with zkLogin
+      await completeZkLogin(oauthUserData, idToken)
+      
+    } catch (error) {
+      console.error('OAuth callback failed:', error)
+      alert('Login failed. Please try again.')
+    } finally {
+      setIsConnecting(null)
+    }
+  }
+
+  const completeZkLogin = async (oauthUserData: any, idToken: string) => {
+    try {
+      // Process OAuth callback using utility function
+      const { user, sessionData } = await processOAuthCallback(idToken, suiClient)
+      
+      // Store session data
+      zkLoginSession.setSession({
+        ephemeralKeyPair: sessionData.ephemeralKeyPair,
+        zkProof: sessionData.zkProof,
+        maxEpoch: sessionData.maxEpoch,
+        userSalt: zkLoginSession.userSalt
+      })
+      
+      // Login user
+      login(user)
+      router.push('/')
+      
+    } catch (error) {
+      console.error('zkLogin completion failed:', error)
+      alert('Login failed. Please try again.')
+    }
   }
 
   const handleOAuthLogin = async (provider: string) => {
-    setIsConnecting(provider)
-    
+    if (provider !== 'google') {
+      alert('Only Google OAuth is currently supported')
+      return
+    }
+
     try {
-      // Simulate OAuth flow - in real implementation, this would:
-      // 1. Redirect to OAuth provider
-      // 2. Handle callback with JWT
-      // 3. Generate ephemeral key pair
-      // 4. Get user salt from salt service
-      // 5. Generate ZK proof
-      // 6. Derive Sui address
+      setIsConnecting(provider)
       
-      // For demo purposes, simulate a successful login
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Always start with OAuth - don't check for salt first
+      // The OAuth callback will handle salt checking
+      const oauthUrl = await initiateOAuthFlow(suiClient)
       
-      const mockUser = {
-        address: '0x15610fa7ee546b96cb580be4060fae1c4bb15eca87f9a0aa931512bad445fc76',
-        provider: provider,
-        sub: `user_${Math.random().toString(16).substr(2, 8)}`,
-        email: `user@${provider}.com`,
-        name: `User from ${provider}`
-      }
+      // Redirect to Google OAuth
+      window.location.href = oauthUrl
       
-      login(mockUser)
-      // Redirect to dashboard after successful login
-      router.push('/')
     } catch (error) {
-      console.error('Login failed:', error)
+      console.error('OAuth login failed:', error)
       alert('Login failed. Please try again.')
     } finally {
       setIsConnecting(null)
@@ -94,9 +125,10 @@ export default function ZkLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-4">
+    <LoginLayout>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
           <div className="flex justify-center">
             <img 
               src="/sui-logo.svg" 
@@ -104,60 +136,51 @@ export default function ZkLoginPage() {
               className={`w-12 h-14 ${styles.logo}`}
             />
           </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">Sui Wallet</h1>
-            <p className="text-muted-foreground">
-              Connect your Sui wallet via your social account privately using zkLogin
-            </p>
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle>Choose Login Method</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <CardTitle className="text-2xl">Welcome to Sui Wallet</CardTitle>
+          <CardDescription>
+            Sign in with your Google account to access your zkLogin wallet
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
             {OAUTH_PROVIDERS.map((provider) => {
               const ButtonComponent = provider.component
               return (
-                <div key={provider.id} className="w-full">
-                  <ButtonComponent
-                    onClick={() => handleOAuthLogin(provider.id)}
-                    disabled={isConnecting !== null}
-                    className={styles.socialLoginButton}
-                    style={{
-                      width: '100%',
-                      height: '48px',
-                      fontSize: '16px',
-                      opacity: isConnecting === provider.id ? 0.7 : 1,
-                      cursor: isConnecting === provider.id ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    {isConnecting === provider.id ? (
-                      <div className={styles.loadingContainer}>
-                        <div className={styles.loadingSpinner}></div>
-                        <span>Connecting...</span>
-                      </div>
-                    ) : (
-                      <span>{provider.text}</span>
-                    )}
-                  </ButtonComponent>
-                </div>
+                <ButtonComponent
+                  key={provider.id}
+                  onClick={() => handleOAuthLogin(provider.id)}
+                  disabled={isConnecting !== null}
+                  className={styles.socialLoginButton}
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    fontSize: '16px',
+                    opacity: isConnecting === provider.id ? 0.7 : 1,
+                    cursor: isConnecting === provider.id ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {isConnecting === provider.id ? (
+                    <div className={styles.loadingContainer}>
+                      <div className={styles.loadingSpinner}></div>
+                      <span>Connecting...</span>
+                    </div>
+                  ) : (
+                    <span>{provider.text}</span>
+                  )}
+                </ButtonComponent>
               )
             })}
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="text-sm text-muted-foreground space-y-2">
-          <h4 className="font-medium text-foreground">How zkLogin Works:</h4>
-          <ul className="space-y-1 text-xs">
-            <li>Your OAuth credentials are verified off-chain</li>
-            <li>A zero-knowledge proof protects your privacy</li>
-            <li>No private keys to manage or remember</li>
-            <li>Self-custodial and secure</li>
-          </ul>
-        </div>
+          <div className="text-center text-sm text-muted-foreground">
+            <p>
+              By signing in, you agree to our Terms of Service and Privacy Policy.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
       </div>
-    </div>
+    </LoginLayout>
   )
 }

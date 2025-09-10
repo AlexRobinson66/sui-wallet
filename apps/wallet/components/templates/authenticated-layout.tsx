@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '../contexts/auth-context'
+import { useAuth } from '../../contexts/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import {
@@ -17,7 +17,7 @@ import {
   SidebarProvider,
   SidebarInset,
 } from '@repo/ui/sidebar'
-import { TopBar } from './top-bar'
+import { TopBar } from '../organisms/top-bar'
 import { 
   LayoutDashboard, 
   TrendingUp, 
@@ -27,16 +27,16 @@ import {
   User,
   ExternalLink
 } from 'lucide-react'
-import { TokenBalance } from '../lib/sui-api'
+import { TokenBalance } from '../../utils/sui-api'
 
-interface AppLayoutProps {
+interface AuthenticatedLayoutProps {
   children: React.ReactNode
   breadcrumbItems: Array<{ label: string; href?: string }>
   balances: TokenBalance[]
   onSend: (token: string, amount: string, recipient: string) => void
 }
 
-export function AppLayout({ children, breadcrumbItems, balances, onSend }: AppLayoutProps) {
+export function AuthenticatedLayout({ children, breadcrumbItems, balances, onSend }: AuthenticatedLayoutProps) {
   const { user, logout } = useAuth()
   const router = useRouter()
 

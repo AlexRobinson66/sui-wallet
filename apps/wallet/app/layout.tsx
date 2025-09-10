@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { AuthProvider } from "../contexts/auth-context";
+import { DevnetBanner } from "../components/atoms/devnet-banner";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -26,6 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider>
+          <DevnetBanner />
           {children}
         </AuthProvider>
       </body>

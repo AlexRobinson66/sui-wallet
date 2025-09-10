@@ -4,13 +4,13 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card'
 import { Button } from '@repo/ui/button'
-import { AppLayout } from '../components/app-layout'
-import { TokenBalance } from '../components/token-balance'
-import { ReceiveTokenDialog } from '../components/receive-token-dialog'
-import { SendTokenDialog } from '../components/send-token-dialog'
-import { NumberDisplay } from '../components/number-display'
+import { AuthenticatedLayout } from '../components/templates/authenticated-layout'
+import { TokenBalance } from '../components/molecules/token-balance'
+import { ReceiveTokenDialog } from '../components/organisms/receive-token-dialog'
+import { SendTokenDialog } from '../components/organisms/send-token-dialog'
+import { NumberDisplay } from '../components/atoms/number-display'
 import { ExternalLink, TrendingUp, TrendingDown } from 'lucide-react'
-import { TokenBalance as TokenBalanceType } from '../lib/sui-api'
+import { TokenBalance as TokenBalanceType } from '../utils/sui-api'
 
 export default function Page() {
   const { user } = useAuth()
@@ -38,7 +38,7 @@ export default function Page() {
   }
 
   return (
-    <AppLayout 
+    <AuthenticatedLayout
       breadcrumbItems={breadcrumbItems}
       balances={balances}
       onSend={handleSend}
@@ -137,7 +137,7 @@ export default function Page() {
               without revealing your identity or managing private keys.
             </p>
           </div>
-        </div>
-      </AppLayout>
+      </div>
+    </AuthenticatedLayout>
   )
 }

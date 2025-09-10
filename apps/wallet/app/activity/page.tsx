@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card'
-import { AppLayout } from '../../components/app-layout'
+import { AuthenticatedLayout } from '../../components/templates/authenticated-layout'
 import { Badge } from '@repo/ui/badge'
-import { NumberDisplay } from '../../components/number-display'
+import { NumberDisplay } from '../../components/atoms/number-display'
 import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle } from 'lucide-react'
-import { fetchTransactions, Transaction } from '../../lib/sui-api'
+import { fetchTransactions, Transaction } from '../../utils/sui-api'
 
 export default function ActivityPage() {
   const { user } = useAuth()
@@ -70,7 +70,7 @@ export default function ActivityPage() {
   }
 
   return (
-    <AppLayout 
+    <AuthenticatedLayout 
       breadcrumbItems={breadcrumbItems}
       balances={[]}
       onSend={() => {}}
@@ -252,6 +252,6 @@ export default function ActivityPage() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </AuthenticatedLayout>
   )
 }

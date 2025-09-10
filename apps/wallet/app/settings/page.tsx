@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/card'
-import { AppLayout } from '@/components/app-layout'
+import { AuthenticatedLayout } from '@/components/templates/authenticated-layout'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -16,7 +16,7 @@ export default function SettingsPage() {
   ]
 
   return (
-    <AppLayout 
+    <AuthenticatedLayout 
       breadcrumbItems={breadcrumbItems}
       balances={[]}
       onSend={() => {}}
@@ -59,6 +59,6 @@ export default function SettingsPage() {
           </Card>
         </div>
       </div>
-    </AppLayout>
+    </AuthenticatedLayout>
   )
 }

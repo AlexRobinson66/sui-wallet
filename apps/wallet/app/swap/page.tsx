@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo
 import { Button } from '@repo/ui/button'
 import { Input } from '@repo/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs'
-import { AppLayout } from '../../components/app-layout'
-import { NumberDisplay } from '../../components/number-display'
+import { AuthenticatedLayout } from '../../components/templates/authenticated-layout'
+import { NumberDisplay } from '../../components/atoms/number-display'
 import { ArrowUpDown, Settings } from 'lucide-react'
 
 export default function SpotTradingPage() {
@@ -39,7 +39,7 @@ export default function SpotTradingPage() {
   }
 
   return (
-    <AppLayout 
+    <AuthenticatedLayout 
       breadcrumbItems={breadcrumbItems}
       balances={[]}
       onSend={() => {}}
@@ -158,6 +158,6 @@ export default function SpotTradingPage() {
           </Card>
         </div>
       </div>
-    </AppLayout>
+    </AuthenticatedLayout>
   )
 }
