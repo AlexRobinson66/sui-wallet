@@ -1,7 +1,0 @@
-{
-  "buildCommand": "cd apps/wallet && npm run build",
-  "outputDirectory": "apps/wallet/.next",
-  "installCommand": "npm install",
-  "framework": "nextjs",
-  "rootDirectory": "apps/wallet"
-}
