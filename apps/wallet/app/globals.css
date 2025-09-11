@@ -6,9 +6,3 @@
 @source "../../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
 
 @import "../../../packages/ui/styles.css";
-
-/* Apply theme variables to body */
-body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-}

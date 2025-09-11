@@ -25,7 +25,6 @@ export function SaltForm({
   const [error, setError] = useState('')
 
   const handlePinComplete = (completedPin: string) => {
-    console.log('completedPin', completedPin)
     setPin(completedPin)
     setError('') // Clear any existing error
     

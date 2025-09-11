@@ -14,8 +14,8 @@ import { suiClient } from '@/utils/sui'
 import { AlertCircle } from 'lucide-react'
 import styles from './page.module.css'
 
-// Enoki API key - you need to get this from https://portal.enoki.mystenlabs.com/
-const ENOKI_API_KEY = process.env.NEXT_PUBLIC_ENOKI_API_KEY || ''
+// Sui network configuration
+const SUI_NETWORK = process.env.NEXT_PUBLIC_SUI_CHAIN || 'devnet'
 
 const OAUTH_PROVIDERS = [
   { 
@@ -58,8 +58,6 @@ export default function LoginPage() {
       // Decode JWT to get user info
       const { jwtDecode } = await import('jwt-decode')
       const decodedJwt = jwtDecode(idToken) as any
-
-      console.log('decodedJwt', decodedJwt)
       
       setOauthData({
         sub: decodedJwt.sub,
@@ -91,7 +89,7 @@ export default function LoginPage() {
 
     try {
       // Process OAuth callback using utility function with the PIN as salt
-      const { user, sessionData } = await processOAuthCallback(idToken, suiClient, pin, ENOKI_API_KEY)
+      const { user, sessionData } = await processOAuthCallback(idToken, suiClient, pin)
       
       // Store session data
       zkLoginSession.setSession({

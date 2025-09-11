@@ -9,7 +9,8 @@ import { TokenBalance } from '../components/molecules/token-balance'
 import { ReceiveTokenDialog } from '../components/organisms/receive-token-dialog'
 import { SendTokenDialog } from '../components/organisms/send-token-dialog'
 import { NumberDisplay } from '../components/atoms/number-display'
-import { ExternalLink, TrendingUp, TrendingDown } from 'lucide-react'
+import { BlockchainExplorerLink } from '../components/atoms/blockchain-explorer-link'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 import { TokenBalance as TokenBalanceType } from '../utils/sui'
 
 export default function Page() {
@@ -97,15 +98,7 @@ export default function Page() {
                   asChild
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  <a 
-                    href={`https://suivision.xyz/account/${user?.address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center space-x-2"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    <span>View on SuiVision Explorer</span>
-                  </a>
+                  <BlockchainExplorerLink address={user?.address || ''} />
                 </Button>
               </div>
             </div>
