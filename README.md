@@ -1,6 +1,6 @@
-# Turborepo starter
+# Sui Wallet
 
-This Turborepo starter is maintained by the Turborepo core team.
+Sui Wallet is a mono repo using Turborepo.
 
 ## Using this example
 
@@ -17,7 +17,7 @@ This Turborepo includes the following packages/apps:
 ### Apps and Packages
 
 - `docs`: a [Next.js](https://nextjs.org/) app
-- `wallet`: another [Next.js](https://nextjs.org/) app
+- `wallet`: the main [Next.js](https://nextjs.org/) app
 - `@repo/ui`: a stub React component library shared by both `wallet` and `docs` applications
 - `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
 - `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
