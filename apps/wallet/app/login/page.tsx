@@ -98,8 +98,6 @@ export default function LoginPage() {
         maxEpoch: sessionData.maxEpoch
       })
 
-      console.log('page | handlePinComplete | sessionData', sessionData)
-      
       // Login user
       login(user)
       router.push('/')
@@ -125,10 +123,14 @@ export default function LoginPage() {
     try {
       setIsConnecting(provider)
       
-      const oauthUrl = await initiateOAuthFlow(suiClient)
+      const { url, data } = await initiateOAuthFlow(suiClient)
+      
+      // Store OAuth data using the session storage hook
+      zkLoginSession.setEphemeralKeyPair(data.ephemeralKeyPair)
+      zkLoginSession.setMaxEpoch(data.maxEpoch)
       
       // Redirect to Google OAuth
-      window.location.href = oauthUrl
+      window.location.href = url
     } catch (error) {
       console.error('OAuth login failed:', error)
       setLoginError('Authentication failed. Please try again.')

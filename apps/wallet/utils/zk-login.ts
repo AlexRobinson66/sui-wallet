@@ -3,41 +3,23 @@
 import { SuiClient } from '@mysten/sui/client'
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { 
-  generateNonce, 
-  generateRandomness, 
-  genAddressSeed, 
-  getZkLoginSignature
+  generateNonce,
+  generateRandomness,
+  genAddressSeed
 } from '@mysten/sui/zklogin'
 // @ts-ignore
 import { jwtDecode } from 'jwt-decode'
 import { GOOGLE_CLIENT_ID, GOOGLE_OAUTH_URL } from './google-oauth'
 
 // zkLogin proof generation options
-const USE_MOCK_PROOFS = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_USE_MOCK_PROOFS === 'true'
+const USE_MOCK_PROOFS = process.env.NEXT_PUBLIC_USE_MOCK_PROOFS === 'true'
 const PROVER_URL = 'https://prover-dev.mystenlabs.com/v1'
 
-// Safe sessionStorage access for SSR compatibility
-function getSessionStorageItem(key: string): string | null {
-  if (typeof window === 'undefined') {
-    return null
-  }
-  try {
-    return sessionStorage.getItem(key)
-  } catch (error) {
-    console.error('Failed to access sessionStorage:', error)
-    return null
-  }
-}
-
-function setSessionStorageItem(key: string, value: string): void {
-  if (typeof window === 'undefined') {
-    return
-  }
-  try {
-    sessionStorage.setItem(key, value)
-  } catch (error) {
-    console.error('Failed to set sessionStorage:', error)
-  }
+// OAuth flow data interface
+export interface OAuthFlowData {
+  ephemeralKeyPair: string
+  maxEpoch: number
+  nonce: string
 }
 
 // JWT payload interface
@@ -231,7 +213,7 @@ export async function processOAuthCallback(
   }
 }
 
-export async function initiateOAuthFlow(suiClient: SuiClient): Promise<string> {
+export async function initiateOAuthFlow(suiClient: SuiClient): Promise<{ url: string; data: OAuthFlowData }> {
   // Generate ephemeral key pair
   const ephemeralKeyPair = new Ed25519Keypair()
   const randomness = generateRandomness()
@@ -243,10 +225,12 @@ export async function initiateOAuthFlow(suiClient: SuiClient): Promise<string> {
   // Generate nonce
   const nonce = generateNonce(ephemeralKeyPair.getPublicKey(), maxEpoch, randomness)
   
-  // Store ephemeral key pair for later use
-  setSessionStorageItem('ephemeralKeyPair', JSON.stringify(Array.from(ephemeralKeyPair.getSecretKey())))
-  setSessionStorageItem('maxEpoch', maxEpoch.toString())
-  
+  // Prepare OAuth flow data to be stored by the calling component
+  const oauthData: OAuthFlowData = {
+    ephemeralKeyPair: JSON.stringify(Array.from(ephemeralKeyPair.getSecretKey())),
+    maxEpoch,
+    nonce
+  }
 
   // Determine redirect URI based on environment
   let redirectUri: string
@@ -263,6 +247,7 @@ export async function initiateOAuthFlow(suiClient: SuiClient): Promise<string> {
   }
   
   const scope = 'openid email profile'
+  const url = `${GOOGLE_OAUTH_URL}?client_id=${GOOGLE_CLIENT_ID}&response_type=id_token&redirect_uri=${redirectUri}&scope=${scope}&nonce=${nonce}`
   
-  return `${GOOGLE_OAUTH_URL}?client_id=${GOOGLE_CLIENT_ID}&response_type=id_token&redirect_uri=${redirectUri}&scope=${scope}&nonce=${nonce}`
+  return { url, data: oauthData }
 }
